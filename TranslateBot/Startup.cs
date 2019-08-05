@@ -8,10 +8,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using TranslateBot.Bots;
+using TranslateBot.DAL;
 
 namespace TranslateBot
 {
@@ -28,6 +30,8 @@ namespace TranslateBot
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+
+			services.AddDbContext<ApplicationContext>(options => options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
 
 			// Create the Bot Framework Adapter with error handling enabled.
 			services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
