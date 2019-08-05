@@ -19,9 +19,15 @@ using TranslateBot.DAL.Models;
 
 namespace TranslateBot.Bots
 {
-	public class TranslationBot : ActivityHandler
+	internal class TranslationBot : ActivityHandler
 	{
-		private char[] _phraseSeparators = { '.', '!', '?', ';' };
+		private readonly char[] _phraseSeparators = { '.', '!', '?', ';' };
+		private readonly ApplicationContext _db;
+
+		public TranslationBot(ApplicationContext db)
+		{
+			_db = db;
+		}
 
 		protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
 		{
@@ -30,40 +36,7 @@ namespace TranslateBot.Bots
 				throw new ArgumentNullException(nameof(turnContext));
 			}
 
-
-			//string[] phrases = turnContext.Activity.Text.Split(_phraseSeparators, StringSplitOptions.RemoveEmptyEntries);
-			//StringBuilder phraseCollectionBuilder = new StringBuilder();
-
-			//using (ApplicationContext db = new ApplicationContext())
-			//{
-			//	foreach (string phrase in phrases)
-			//	{
-			//		string phraseText = phrase.Trim();
-			//		phraseCollectionBuilder.AppendLine(phraseText);
-
-			//		db.Translations.Add(new DAL.Models.Translation
-			//		{
-			//			RussianPhrase = phraseText,
-			//			EnglishPhrase = phraseText
-			//		});
-			//		//await db.Translations
-			//		//	.AddAsync(new DAL.Models.Translation
-			//		//	{
-			//		//		RussianPhrase = phraseText,
-			//		//		EnglishPhrase = phraseText
-			//		//	})
-			//		//	.ConfigureAwait(false);
-			//	}
-
-			//	db.SaveChanges();
-			//	//await db.SaveChangesAsync()
-			//	//	.ConfigureAwait(false);
-			//}
-
-
-
-
-			string translation = await GetTranslationAsync(turnContext.Activity.Text)
+			string translation = await GetTranslationAsync(turnContext.Activity.Text, cancellationToken)
 				.ConfigureAwait(false);
 			await turnContext.SendActivityAsync(MessageFactory.Text(translation), cancellationToken)
 				.ConfigureAwait(false);
@@ -94,11 +67,11 @@ namespace TranslateBot.Bots
 			}
 		}
 
-		private async Task<string> GetTranslationAsync(string originText)
+		private async Task<string> GetTranslationAsync(string originText, CancellationToken cancellationToken)
 		{
 			string[] phrases = originText.Split(_phraseSeparators, StringSplitOptions.RemoveEmptyEntries);
 
-			Dictionary<string, string> translatedPhrases = await GetTranslatedPhrasesAsync(phrases)
+			Dictionary<string, string> translatedPhrases = await GetTranslatedPhrasesAsync(phrases, cancellationToken)
 				.ConfigureAwait(false);
 			List<string> newPhraseList = phrases
 				.Except(translatedPhrases.Select(item => item.Key))
@@ -121,7 +94,7 @@ namespace TranslateBot.Bots
 
 			if (newPhraseList.Count > 0)
 			{
-				Dictionary<string, string> newPhrases = await GetNewPhraseTranslationsAsync(newPhraseList)
+				Dictionary<string, string> newPhrases = await GetNewPhraseTranslationsAsync(newPhraseList, cancellationToken)
 					.ConfigureAwait(false);
 
 				phraseCollectionBuilder.AppendLine("New phrases:");
@@ -135,18 +108,24 @@ namespace TranslateBot.Bots
 			return phraseCollectionBuilder.ToString();
 		}
 
-		private static async Task<Dictionary<string, string>> GetTranslatedPhrasesAsync(string[] phrases)
+		private Task<Dictionary<string, string>> GetTranslatedPhrasesAsync(string[] phrases, CancellationToken cancellationToken)
 		{
-			using (ApplicationContext db = new ApplicationContext())
-			{
-				return await db.Translations
-					.Where(item => phrases.Contains(item.RussianPhrase))
-					.ToDictionaryAsync(key => key.RussianPhrase, element => element.EnglishPhrase)
-					.ConfigureAwait(false);
-			}
+			return _db.Translations
+				.Where(item => phrases.Contains(item.RussianPhrase))
+				.ToDictionaryAsync(key => key.RussianPhrase, element => element.EnglishPhrase, cancellationToken);
 		}
+		//private async Task<Dictionary<string, string>> GetTranslatedPhrasesAsync(string[] phrases)
+		//{
+		//	using (ApplicationContext db = new ApplicationContext())
+		//	{
+		//		return await db.Translations
+		//			.Where(item => phrases.Contains(item.RussianPhrase))
+		//			.ToDictionaryAsync(key => key.RussianPhrase, element => element.EnglishPhrase)
+		//			.ConfigureAwait(false);
+		//	}
+		//}
 
-		private static async Task<Dictionary<string, string>> GetNewPhraseTranslationsAsync(List<string> phrases)
+		private async Task<Dictionary<string, string>> GetNewPhraseTranslationsAsync(List<string> phrases, CancellationToken cancellationToken)
 		{
 			Dictionary<string, string> newPhrases = new Dictionary<string, string>();
 			List<Translation> translations = new List<Translation>(phrases.Count);
@@ -163,14 +142,19 @@ namespace TranslateBot.Bots
 				});
 			}
 
-			using (ApplicationContext db = new ApplicationContext())
-			{
-				await db.Translations
-					.AddRangeAsync(translations)
-					.ConfigureAwait(false);
-				await db.SaveChangesAsync()
-					.ConfigureAwait(false);
-			}
+			await _db.Translations
+				.AddRangeAsync(translations, cancellationToken)
+				.ConfigureAwait(false);
+			await _db.SaveChangesAsync(cancellationToken)
+				.ConfigureAwait(false);
+			//using (ApplicationContext db = new ApplicationContext())
+			//{
+			//	await db.Translations
+			//		.AddRangeAsync(translations)
+			//		.ConfigureAwait(false);
+			//	await db.SaveChangesAsync()
+			//		.ConfigureAwait(false);
+			//}
 
 			return newPhrases;
 		}
