@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
+using Microsoft.Extensions.Logging;
 
 namespace TranslateBot.Controllers
 {
@@ -20,16 +21,23 @@ namespace TranslateBot.Controllers
 	{
 		private readonly IBotFrameworkHttpAdapter _adapter;
 		private readonly IBot _bot;
+		private readonly ILogger<BotController> _logger;
 
-		public BotController(IBotFrameworkHttpAdapter adapter, IBot bot)
+		public BotController(
+			IBotFrameworkHttpAdapter adapter,
+			IBot bot,
+			ILogger<BotController> logger)
 		{
 			_adapter = adapter;
 			_bot = bot;
+			_logger = logger;
 		}
 
 		[HttpPost]
 		public Task PostAsync()
 		{
+			_logger.LogTrace(nameof(PostAsync));
+
 			// Delegate the processing of the HTTP POST to the adapter.
 			// The adapter will invoke the bot.
 			return _adapter.ProcessAsync(Request, Response, _bot);
