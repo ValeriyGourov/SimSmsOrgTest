@@ -3,8 +3,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using TranslateBot.DAL.Models;
-
 namespace TranslateBot.DAL
 {
 	public class ApplicationContext : DbContext
@@ -12,7 +10,7 @@ namespace TranslateBot.DAL
 		//private readonly string _connectionString;
 
 		private readonly ILogger<ApplicationContext> _logger;
-		public DbSet<Translation> Translations { get; set; }
+		public DbSet<Models.Translation> Translations { get; set; }
 
 		public ApplicationContext(
 			DbContextOptions<ApplicationContext> options,
