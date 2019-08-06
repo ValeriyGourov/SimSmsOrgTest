@@ -23,14 +23,14 @@ namespace TranslateBot.Bots
 	internal class TranslationBot : ActivityHandler
 	{
 		private readonly char[] _phraseSeparators = { '.', '!', '?', ';' };
-		private readonly ApplicationContext _db;
+		private readonly ApplicationContext _context;
 		private readonly ILogger<TranslationBot> _logger;
 
 		public TranslationBot(
-			ApplicationContext db,
+			ApplicationContext context,
 			ILogger<TranslationBot> logger)
 		{
-			_db = db;
+			_context = context;
 			_logger = logger;
 		}
 
@@ -123,7 +123,7 @@ namespace TranslateBot.Bots
 		{
 			_logger.LogTrace(nameof(GetTranslatedPhrasesAsync));
 
-			return _db.Translations
+			return _context.Translations
 				.Where(item => phrases.Contains(item.RussianPhrase))
 				.ToDictionaryAsync(key => key.RussianPhrase, element => element.EnglishPhrase, cancellationToken);
 		}
@@ -159,10 +159,10 @@ namespace TranslateBot.Bots
 
 			try
 			{
-				await _db.Translations
+				await _context.Translations
 					.AddRangeAsync(translations, cancellationToken)
 					.ConfigureAwait(false);
-				await _db.SaveChangesAsync(cancellationToken)
+				await _context.SaveChangesAsync(cancellationToken)
 					.ConfigureAwait(false);
 			}
 			catch (Exception exception)

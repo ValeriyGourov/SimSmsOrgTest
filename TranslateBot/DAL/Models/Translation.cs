@@ -2,7 +2,7 @@
 
 namespace TranslateBot.DAL.Models
 {
-	internal class Translation
+	public class Translation
 	{
 		public int Id { get; set; }
 		[Required]
