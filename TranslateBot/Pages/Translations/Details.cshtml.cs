@@ -13,7 +13,7 @@ namespace TranslateBot.Pages.Translations
 	{
 		private readonly ApplicationContext _context;
 
-		public Translation Translation { get; private set; }
+		public Translation Translation { get; set; }
 
 		public DetailsModel(ApplicationContext context) => _context = context;
 
