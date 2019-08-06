@@ -1,19 +1,35 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 using TranslateBot.DAL.Models;
 
 namespace TranslateBot.DAL
 {
-	internal class ApplicationContext : DbContext
+	public class ApplicationContext : DbContext
 	{
 		//private readonly string _connectionString;
 
+		private readonly ILogger<ApplicationContext> _logger;
 		public DbSet<Translation> Translations { get; set; }
 
-		public ApplicationContext(DbContextOptions<ApplicationContext> dbContextOptions)
-			: base(dbContextOptions)
+		public ApplicationContext(
+			DbContextOptions<ApplicationContext> options,
+			ILogger<ApplicationContext> logger)
+			: base(options)
 		{
-			Database.EnsureCreated();
+			_logger = logger;
+
+			try
+			{
+				Database.EnsureCreated();
+			}
+			catch (Exception exception)
+			{
+				_logger.LogError(exception, "Ошибка при создании базы данных.");
+				throw;
+			}
 		}
 		//public ApplicationContext(string connectionString)
 		//{
