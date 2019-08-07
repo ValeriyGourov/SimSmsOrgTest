@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,22 +17,24 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using TranslateBot.DAL;
-using TranslateBot.DAL.Models;
+using TranslateBot.Translation;
 
 namespace TranslateBot.Bots
 {
 	internal class TranslationBot : ActivityHandler
 	{
-		private readonly char[] _phraseSeparators = { '.', '!', '?', ';' };
 		private readonly ApplicationContext _context;
 		private readonly ILogger<TranslationBot> _logger;
+		private readonly MicrosoftTranslator _translator;
 
 		public TranslationBot(
 			ApplicationContext context,
-			ILogger<TranslationBot> logger)
+			ILogger<TranslationBot> logger,
+			MicrosoftTranslator translator)
 		{
-			_context = context;
-			_logger = logger;
+			_context = context ?? throw new ArgumentNullException(nameof(context));
+			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
+			_translator = translator ?? throw new ArgumentNullException(nameof(translator));
 		}
 
 		protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
@@ -43,12 +46,14 @@ namespace TranslateBot.Bots
 				throw new ArgumentNullException(nameof(turnContext));
 			}
 
+			const string infoText = "Выполняется перевод текста...";
+			await turnContext.SendActivityAsync(MessageFactory.Text(infoText), cancellationToken)
+				.ConfigureAwait(false);
+
 			string translation = await GetTranslationAsync(turnContext.Activity.Text, cancellationToken)
 				.ConfigureAwait(false);
 			await turnContext.SendActivityAsync(MessageFactory.Text(translation), cancellationToken)
 				.ConfigureAwait(false);
-			//return turnContext.SendActivityAsync(MessageFactory.Text($"Phrases:{Environment.NewLine}{phraseCollectionBuilder.ToString()}"), cancellationToken);
-			//return turnContext.SendActivityAsync(MessageFactory.Text($"Echo: {turnContext.Activity.Text}"), cancellationToken);
 		}
 
 		protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
@@ -65,7 +70,7 @@ namespace TranslateBot.Bots
 				throw new ArgumentNullException(nameof(turnContext));
 			}
 
-			foreach (var member in membersAdded)
+			foreach (ChannelAccount member in membersAdded)
 			{
 				if (member.Id != turnContext.Activity.Recipient.Id)
 				{
@@ -80,46 +85,47 @@ namespace TranslateBot.Bots
 		{
 			_logger.LogTrace(nameof(GetTranslationAsync));
 
-			string[] phrases = originText.Split(_phraseSeparators, StringSplitOptions.RemoveEmptyEntries);
+			string[] splittedOriginText = Regex.Split(originText, @"(?<=[.!?;])");
+			IEnumerable<string> phrases = splittedOriginText
+				.Where(phrase => !string.IsNullOrEmpty(phrase))
+				.Select(phrase => phrase.Trim());
 
 			Dictionary<string, string> translatedPhrases = await GetTranslatedPhrasesAsync(phrases, cancellationToken)
 				.ConfigureAwait(false);
 			List<string> newPhraseList = phrases
 				.Except(translatedPhrases.Select(item => item.Key))
 				.ToList();
-			//Dictionary<string, string> newPhrases = phrases
-			//	.Except(translatedPhrases.Select(item => item.Key))
-			//	.ToDictionary(item => item, element => (string)null);
-
-			StringBuilder phraseCollectionBuilder = new StringBuilder();
-
-			if (translatedPhrases.Count > 0)
-			{
-				phraseCollectionBuilder.AppendLine("Translated phrases:");
-
-				foreach (KeyValuePair<string, string> phrase in translatedPhrases)
-				{
-					phraseCollectionBuilder.AppendLine($"{phrase.Key} -> {phrase.Value}");
-				}
-			}
 
 			if (newPhraseList.Count > 0)
 			{
 				Dictionary<string, string> newPhrases = await GetNewPhraseTranslationsAsync(newPhraseList, cancellationToken)
 					.ConfigureAwait(false);
-
-				phraseCollectionBuilder.AppendLine("New phrases:");
-
-				foreach (KeyValuePair<string, string> phrase in newPhrases)
-				{
-					phraseCollectionBuilder.AppendLine($"{phrase.Key} -> {phrase.Value}");
-				}
+				translatedPhrases = translatedPhrases
+					.Concat(newPhrases)
+					.ToDictionary(key => key.Key, element => element.Value);
 			}
 
-			return phraseCollectionBuilder.ToString();
+			StringBuilder phraseBuilder = new StringBuilder();
+			foreach (string textPart in splittedOriginText)
+			{
+				string trimmedTextPart = textPart.Trim();
+
+				string newTextPart;
+				if (translatedPhrases.TryGetValue(trimmedTextPart, out string translation))
+				{
+					newTextPart = textPart.Replace(trimmedTextPart, translation, StringComparison.OrdinalIgnoreCase);
+				}
+				else
+				{
+					newTextPart = textPart;
+				}
+				phraseBuilder.Append(newTextPart);
+			}
+
+			return phraseBuilder.ToString();
 		}
 
-		private Task<Dictionary<string, string>> GetTranslatedPhrasesAsync(string[] phrases, CancellationToken cancellationToken)
+		private Task<Dictionary<string, string>> GetTranslatedPhrasesAsync(IEnumerable<string> phrases, CancellationToken cancellationToken)
 		{
 			_logger.LogTrace(nameof(GetTranslatedPhrasesAsync));
 
@@ -127,30 +133,24 @@ namespace TranslateBot.Bots
 				.Where(item => phrases.Contains(item.RussianPhrase))
 				.ToDictionaryAsync(key => key.RussianPhrase, element => element.EnglishPhrase, cancellationToken);
 		}
-		//private async Task<Dictionary<string, string>> GetTranslatedPhrasesAsync(string[] phrases)
-		//{
-		//	using (ApplicationContext db = new ApplicationContext())
-		//	{
-		//		return await db.Translations
-		//			.Where(item => phrases.Contains(item.RussianPhrase))
-		//			.ToDictionaryAsync(key => key.RussianPhrase, element => element.EnglishPhrase)
-		//			.ConfigureAwait(false);
-		//	}
-		//}
 
 		private async Task<Dictionary<string, string>> GetNewPhraseTranslationsAsync(List<string> phrases, CancellationToken cancellationToken)
 		{
 			_logger.LogTrace(nameof(GetNewPhraseTranslationsAsync));
 
+			IDictionary<string, string> phraseTranslations = await _translator
+				.TranslateAsync(phrases, cancellationToken)
+				.ConfigureAwait(false);
+
 			Dictionary<string, string> newPhrases = new Dictionary<string, string>();
-			List<Translation> translations = new List<Translation>(phrases.Count);
+			List<DAL.Models.Translation> translations = new List<DAL.Models.Translation>(phrases.Count);
 			foreach (string phrase in phrases)
 			{
-				string newTranslation = $"Translation {phrase}"; // TODO: Заглушка.
+				string newTranslation = phraseTranslations[phrase];
 
 				newPhrases.Add(phrase, newTranslation);
 
-				translations.Add(new Translation
+				translations.Add(new DAL.Models.Translation
 				{
 					RussianPhrase = phrase,
 					EnglishPhrase = newTranslation
@@ -170,40 +170,8 @@ namespace TranslateBot.Bots
 				_logger.LogError(exception, "Не выполнена запись новых переводов в базу данных.");
 				throw;
 			}
-			//using (ApplicationContext db = new ApplicationContext())
-			//{
-			//	await db.Translations
-			//		.AddRangeAsync(translations)
-			//		.ConfigureAwait(false);
-			//	await db.SaveChangesAsync()
-			//		.ConfigureAwait(false);
-			//}
 
 			return newPhrases;
 		}
-		//private static async Task SetNewPhraseTranslationsAsync(Dictionary<string, string> phrases)
-		//{
-		//	List<Translation> translations = new List<Translation>(phrases.Count);
-		//	foreach (KeyValuePair<string, string> phrase in phrases)
-		//	{
-		//		string newTranslation = $"Translation {phrase.Key}"; // TODO: Заглушка.
-		//		phrases[phrase.Key] = newTranslation;
-
-		//		translations.Add(new Translation
-		//		{
-		//			RussianPhrase = phrase.Key,
-		//			EnglishPhrase = newTranslation
-		//		});
-		//	}
-
-		//	using (ApplicationContext db = new ApplicationContext())
-		//	{
-		//		await db.Translations
-		//			.AddRangeAsync(translations)
-		//			.ConfigureAwait(false);
-		//		await db.SaveChangesAsync()
-		//			.ConfigureAwait(false);
-		//	}
-		//}
 	}
 }
