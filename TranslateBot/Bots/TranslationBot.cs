@@ -46,10 +46,8 @@ namespace TranslateBot.Bots
 				throw new ArgumentNullException(nameof(turnContext));
 			}
 
-			const string infoText = "¬ыполн€етс€ перевод текста...";
-			Activity infoMessage = MessageFactory.Text(infoText);
-			infoMessage.Locale = "ru-RU";
-			await turnContext.SendActivityAsync(infoMessage, cancellationToken)
+			const string infoText = "Translating...";    // TODO: ѕри отправки кириллицы в канал текст отображаетс€ некорректно. ≈сть мнение, что это из-за кодировки проекта (?) или кодировки хостинга, на котором опубликовано приложение бота.
+			await turnContext.SendActivityAsync(MessageFactory.Text(infoText), cancellationToken)
 				.ConfigureAwait(false);
 
 			string translation = await GetTranslationAsync(turnContext.Activity.Text, cancellationToken)
