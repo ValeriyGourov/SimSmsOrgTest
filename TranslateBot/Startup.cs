@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using TranslateBot.Bots;
 using TranslateBot.DAL;
+using TranslateBot.Translation;
 
 namespace TranslateBot
 {
@@ -32,6 +33,8 @@ namespace TranslateBot
 			services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
 			services.AddDbContext<ApplicationContext>(options => options.UseSqlite(Configuration.GetConnectionString("ApplicationContext")));
+
+			services.AddSingleton<MicrosoftTranslator>();
 
 			// Create the Bot Framework Adapter with error handling enabled.
 			services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();

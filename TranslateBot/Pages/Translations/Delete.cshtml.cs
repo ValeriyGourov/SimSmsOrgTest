@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 using TranslateBot.DAL;
-using TranslateBot.DAL.Models;
 
 namespace TranslateBot.Pages.Translations
 {
@@ -14,7 +13,7 @@ namespace TranslateBot.Pages.Translations
 		private readonly ApplicationContext _context;
 
 		[BindProperty]
-		public Translation Translation { get; set; }
+		public DAL.Models.Translation Translation { get; set; }
 
 		public DeleteModel(ApplicationContext context) => _context = context;
 

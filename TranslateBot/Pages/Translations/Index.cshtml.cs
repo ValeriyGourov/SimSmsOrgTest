@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
 using TranslateBot.DAL;
-using TranslateBot.DAL.Models;
 
 namespace TranslateBot.Pages.Translations
 {
@@ -13,7 +12,7 @@ namespace TranslateBot.Pages.Translations
 	{
 		private readonly ApplicationContext _context;
 
-		public IList<Translation> Translation { get; private set; }
+		public IList<DAL.Models.Translation> Translation { get; private set; }
 
 		public IndexModel(ApplicationContext context) => _context = context;
 
