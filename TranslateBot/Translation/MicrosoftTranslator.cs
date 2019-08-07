@@ -15,6 +15,7 @@ using TranslateBot.Translation.Model;
 
 namespace TranslateBot.Translation
 {
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Избегайте внутренних классов, не имеющих экземпляры", Justification = "<Ожидание>")]
 	internal class MicrosoftTranslator
 	{
 		private static readonly Uri _requestUri = new Uri("https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=ru&to=en");
@@ -26,7 +27,7 @@ namespace TranslateBot.Translation
 			IConfiguration configuration,
 			ILogger<MicrosoftTranslator> logger)
 		{
-			// TODO: Для тестового задание хранение ключа в настройках сойдёт, для реального проекта нужно его хранить в более надёжном хранилище.
+			// TODO: Для тестового задание хранение ключа в настройках сойдёт, для реального проекта нужно его хранить в более надёжном хранилище или шифровать.
 			_key = configuration["TranslatorKey"] ?? throw new ApplicationException("В настройках приложения не указан ключ службы перевода текстов.");
 			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		}

@@ -21,6 +21,7 @@ using TranslateBot.Translation;
 
 namespace TranslateBot.Bots
 {
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Избегайте внутренних классов, не имеющих экземпляры", Justification = "<Ожидание>")]
 	internal class TranslationBot : ActivityHandler
 	{
 		private readonly ApplicationContext _context;
@@ -85,8 +86,8 @@ namespace TranslateBot.Bots
 		{
 			_logger.LogTrace(nameof(GetTranslationAsync));
 
-			string[] splittedOriginText = Regex.Split(originText, @"(?<=[.!?;])");
-			IEnumerable<string> phrases = splittedOriginText
+			string[] originTextChunks = Regex.Split(originText, @"(?<=[.!?;])");    // Здесь разбиваем исходный текст на части с сохранением разделителей и пробелов.
+			IEnumerable<string> phrases = originTextChunks
 				.Where(phrase => !string.IsNullOrEmpty(phrase))
 				.Select(phrase => phrase.Trim());
 
@@ -105,24 +106,24 @@ namespace TranslateBot.Bots
 					.ToDictionary(key => key.Key, element => element.Value);
 			}
 
-			StringBuilder phraseBuilder = new StringBuilder();
-			foreach (string textPart in splittedOriginText)
+			StringBuilder translatedTextBuilder = new StringBuilder();
+			foreach (string textChunk in originTextChunks)
 			{
-				string trimmedTextPart = textPart.Trim();
+				string trimmedTextChunk = textChunk.Trim();
 
-				string newTextPart;
-				if (translatedPhrases.TryGetValue(trimmedTextPart, out string translation))
+				string newTextChunk;
+				if (translatedPhrases.TryGetValue(trimmedTextChunk, out string translation))
 				{
-					newTextPart = textPart.Replace(trimmedTextPart, translation, StringComparison.OrdinalIgnoreCase);
+					newTextChunk = textChunk.Replace(trimmedTextChunk, translation, StringComparison.OrdinalIgnoreCase);    // Заменой текста мы сохраняем пробелы между кусками текста.
 				}
 				else
 				{
-					newTextPart = textPart;
+					newTextChunk = textChunk;
 				}
-				phraseBuilder.Append(newTextPart);
+				translatedTextBuilder.Append(newTextChunk);
 			}
 
-			return phraseBuilder.ToString();
+			return translatedTextBuilder.ToString();
 		}
 
 		private Task<Dictionary<string, string>> GetTranslatedPhrasesAsync(IEnumerable<string> phrases, CancellationToken cancellationToken)
@@ -130,7 +131,7 @@ namespace TranslateBot.Bots
 			_logger.LogTrace(nameof(GetTranslatedPhrasesAsync));
 
 			return _context.Translations
-				.Where(item => phrases.Contains(item.RussianPhrase))
+				.Where(translation => phrases.Contains(translation.RussianPhrase))
 				.ToDictionaryAsync(key => key.RussianPhrase, element => element.EnglishPhrase, cancellationToken);
 		}
 

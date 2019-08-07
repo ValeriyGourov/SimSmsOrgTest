@@ -7,9 +7,8 @@ namespace TranslateBot.DAL
 {
 	public class ApplicationContext : DbContext
 	{
-		//private readonly string _connectionString;
-
 		private readonly ILogger<ApplicationContext> _logger;
+
 		public DbSet<Models.Translation> Translations { get; set; }
 
 		public ApplicationContext(
@@ -29,19 +28,5 @@ namespace TranslateBot.DAL
 				throw;
 			}
 		}
-		//public ApplicationContext(string connectionString)
-		//{
-		//	_connectionString = connectionString;
-
-		//	Database.EnsureCreated();
-		//}
-
-		//protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-		//{
-		//	optionsBuilder.UseSqlite(_connectionString);
-		//	//optionsBuilder.UseSqlite("Data Source=wwwroot/TranslateBot.db");
-		//	//optionsBuilder.UseSqlite("Data Source=TranslateBot.db");
-		//	//optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=helloappdb;Trusted_Connection=True;");
-		//}
 	}
 }
