@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json;
 
@@ -19,17 +20,23 @@ namespace TranslateBot.Translation
 		private static readonly Uri _requestUri = new Uri("https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&from=ru&to=en");
 		private static readonly HttpClient _httpClient = new HttpClient();
 		private readonly string _key;
+		private readonly ILogger<MicrosoftTranslator> _logger;
 
-		public MicrosoftTranslator(IConfiguration configuration)
+		public MicrosoftTranslator(
+			IConfiguration configuration,
+			ILogger<MicrosoftTranslator> logger)
 		{
 			// TODO: Для тестового задание хранение ключа в настройках сойдёт, для реального проекта нужно его хранить в более надёжном хранилище.
 			_key = configuration["TranslatorKey"] ?? throw new ApplicationException("В настройках приложения не указан ключ службы перевода текстов.");
+			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		}
 
 		public async Task<IDictionary<string, string>> TranslateAsync(IEnumerable<string> texts, CancellationToken cancellationToken = default)
 		{
 			// From Cognitive Services translation documentation:
 			// https://docs.microsoft.com/en-us/azure/cognitive-services/translator/quickstart-csharp-translate
+
+			_logger.LogTrace(nameof(TranslateAsync));
 
 			// TODO: Реализовать следующие ограничения:
 			// - Массив может содержать не более 100 элементов.
@@ -58,11 +65,12 @@ namespace TranslateBot.Translation
 					.SendAsync(request, cancellationToken)
 					.ConfigureAwait(false))
 				{
-					response.EnsureSuccessStatusCode();
-
 					responseBody = await response.Content
 					   .ReadAsStringAsync()
 					   .ConfigureAwait(false);
+					_logger.LogInformation(responseBody);
+
+					response.EnsureSuccessStatusCode();
 				}
 
 				TranslatorResponse[] translatorResponses = JsonConvert.DeserializeObject<TranslatorResponse[]>(responseBody);
