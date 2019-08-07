@@ -47,9 +47,7 @@ namespace TranslateBot.Bots
 			}
 
 			const string infoText = "Выполняется перевод текста...";
-			Activity infoMessage = MessageFactory.Text(infoText);
-			infoMessage.Locale = "ru-RU";
-			await turnContext.SendActivityAsync(infoMessage, cancellationToken)
+			await turnContext.SendActivityAsync(MessageFactory.Text(infoText), cancellationToken)
 				.ConfigureAwait(false);
 
 			string translation = await GetTranslationAsync(turnContext.Activity.Text, cancellationToken)
