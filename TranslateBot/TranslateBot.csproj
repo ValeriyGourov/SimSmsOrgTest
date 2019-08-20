@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <LangVersion>latest</LangVersion>
+    <ApplicationInsightsResourceId>/subscriptions/d0125cb1-0b92-43bd-9d92-ac9d5eb47655/resourcegroups/SimSmsOrgTest/providers/microsoft.insights/components/SimSmsOrgTestTranslateBotyjczyw</ApplicationInsightsResourceId>
+    <ApplicationInsightsAnnotationResourceId>/subscriptions/d0125cb1-0b92-43bd-9d92-ac9d5eb47655/resourcegroups/SimSmsOrgTest/providers/microsoft.insights/components/SimSmsOrgTestTranslateBotyjczyw</ApplicationInsightsAnnotationResourceId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -55,6 +57,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.7.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.5.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.4">
@@ -79,5 +82,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+    <ItemGroup>
+      <WCFMetadata Include="Connected Services" />
+    </ItemGroup>
 
 </Project>
