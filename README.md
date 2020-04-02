@@ -11,4 +11,4 @@
 6. Опубликовать
 
 ## Реализация
-Бот реализован на базе ASP.NET Core 2 с помощью [Microsoft Bot Framework](https://dev.botframework.com/) и [Служба Bot (Azure Bot Service)](https://azure.microsoft.com/ru-ru/services/bot-service/). Функции перевода текстов реализованы через [Перевод текстов (Microsoft Translator)](https://azure.microsoft.com/ru-ru/services/cognitive-services/translator-text-api/). Для просмотра и изменения сохранённых преводов используется [Razor Pages](https://docs.microsoft.com/ru-ru/aspnet/core/razor-pages).
+Бот реализован на базе ASP.NET Core 2 с помощью [Microsoft Bot Framework](https://dev.botframework.com/) и [Служба Bot (Azure Bot Service)](https://azure.microsoft.com/ru-ru/services/bot-service/). Функции перевода текстов реализованы через [Перевод текстов (Microsoft Translator)](https://azure.microsoft.com/ru-ru/services/cognitive-services/translator-text-api/). Для просмотра и изменения сохранённых переводов используется [Razor Pages](https://docs.microsoft.com/ru-ru/aspnet/core/razor-pages).
